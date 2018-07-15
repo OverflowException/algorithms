@@ -36,11 +36,6 @@ namespace imgalg
       inline const _T* ptr(int row) const { return _row_ptrs[row]; }
       inline _T* ptr(int row) { return _row_ptrs[row]; }
       
-      //////////////////////
-      inline _T** debug_row_ptrs() { return _row_ptrs; }
-      //////////////////////
-
-      
       friend std::ostream& operator<<(std::ostream& os, const Matr& mat)
       {
 	int r_idx, c_idx;
@@ -81,13 +76,10 @@ namespace imgalg
     {
       _allocate_all(sz.height, sz.width);
     }
-
   
   template<typename _T>
     Matr<_T>::Matr(const Matr& mat)
     {
-      //////////
-      std::cout << "Copy constructor called!" << std::endl;
       _data_ptr = NULL;
       _row_ptrs = new _T*[mat._row];
       std::copy(mat._row_ptrs, mat._row_ptrs + mat._row, _row_ptrs);
@@ -106,7 +98,6 @@ namespace imgalg
   template<typename _T>
     Matr<_T>& Matr<_T>::operator=(const Matr<_T>& mat)
     {
-      std::cout << "operator= called!" << std::endl;
       delete[] _data_ptr;
       _data_ptr = NULL;
 
