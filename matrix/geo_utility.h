@@ -1,7 +1,7 @@
 #ifndef _GEO_UTILITY_H
 #define _GEO_UTILITY_H
 
-#include <iostream>
+#include <ostream>
 
 namespace imgalg
 {
@@ -9,11 +9,14 @@ namespace imgalg
     class Point
     {
     public:
-      //ctors, default copy ctor
-      Point() : x(_T(0)), y(_T(0)){};
+      typedef _T value_type;
+      //ctors
+      Point() = default;
       Point(const _T& x, const _T& y) : x(x), y(y){}
+      template<typename _Tp>
+	Point(const Point<_Tp>& p) : x(_T(p.x)), y(_T(p.y)){}
 
-      Point& operator=(const Point& p);
+      //Default operator=
       Point operator+(const Point& p) const;
       Point operator-(const Point& p) const;
       Point& operator+=(const Point& p);
@@ -32,9 +35,12 @@ namespace imgalg
     class Size
     {
     public:
-      //ctors, default copy ctor
-      Size() : width(_T(0)), height(_T(0)){}
+      typedef _T value_type;
+      //ctors
+      Size() = default;
       Size(const _T& w, const _T& h) : width(w), height(h){}
+      template<typename _Tp>
+	Size(const Size<_Tp>& sz) : width(_T(sz.width)), height(_T(sz.height)){}
       Size(const Point<_T>& p1, const Point<_T>& p2)
 	{
 	  _T x_diff = p1.x - p2.x;
@@ -42,8 +48,8 @@ namespace imgalg
 	  width = x_diff < 0 ? 0 - x_diff : x_diff;
 	  height = y_diff < 0 ? 0 - y_diff : y_diff;
 	}
-      
-      Size& operator=(const Size& s);
+
+      //Default operator=
       Size operator+(const Size& s) const;
       Size operator-(const Size& s) const;
       Size& operator+=(const Size& s);
@@ -62,11 +68,16 @@ namespace imgalg
     class Rect
     {
     public:
-      //ctors, default copy ctors
-      Rect() : x(_T(0)), y(_T(y)), width(_T(0)), height(_T(0)){}
+      typedef _T value_type;
+      //ctors
+      Rect() = default;
       Rect(_T x, _T y, _T w, _T h) : x(x), y(y), width(w), height(h){}
       Rect(const Point<_T> p1, const Point<_T> p2);
+      template<typename _Tp>
+	Rect(const Rect<_Tp>& r) : x(_T(r.x)), y(_T(r.y)), width(_T(r.width)), height(_T(r.height)){}
+
       
+      //Default operator=
       Point<_T> tl() const { return Point<_T>(x, y); }
       Point<_T> br() const { return Point<_T>(x + width, y + height); }
       Size<_T> size() const { return Size<_T>(width, height); }
@@ -85,13 +96,6 @@ namespace imgalg
   
 
   //Point member function definitions
-  template<typename _T>
-    Point<_T>& Point<_T>::operator=(const Point<_T>& p)
-    {
-      x = p.x; y = p.y;
-      return *this;
-    }
-
   template<typename _T>
     Point<_T> Point<_T>::operator+(const Point<_T>& p) const
     {
@@ -123,13 +127,6 @@ namespace imgalg
     }
 
   //Size member function definitions
-    template<typename _T>
-    Size<_T>& Size<_T>::operator=(const Size<_T>& s)
-    {
-      width = s.width; height = s.height;
-      return *this;
-    }
-
   template<typename _T>
     Size<_T> Size<_T>::operator+(const Size<_T>& s) const
     {

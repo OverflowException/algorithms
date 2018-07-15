@@ -3,12 +3,6 @@
 
 using namespace imgalg;
 
-Size<int> addSize(const Size<int>& s1, const Size<int>& s2)
-{
-  std::cout << s1 << std::endl;
-  return s1 + s2;
-}
-
 int main(int argc, char** argv)
 {
   std::cout << "Point test" << std::endl;
@@ -25,10 +19,9 @@ int main(int argc, char** argv)
 
   std::cout << "Size test" << std::endl;
   Size<int> s1(6, 2);
-  Size<int> s2(3, 2);
-  Size<int> s3, s4;
-  (s3 += s1) -= s2;
-  s4 = addSize(s1, s2);
+  Size<double> s2(3.32, 3.5);
+  Size<int> s3 = s1 + s2;
+  Size<double> s4;
 
   std::cout << s1 << std::endl;
   std::cout << s2 << std::endl;
@@ -39,8 +32,6 @@ int main(int argc, char** argv)
   Rect<double> r1(Point<double>(1, 12), Point<double>(3.2, 5.67));
 
   std::cout << r1 << std::endl;
-  
-  
   
   return 0;
 }
