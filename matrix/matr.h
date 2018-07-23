@@ -4,21 +4,43 @@
 #include "geo_utility.h"
 #include <algorithm>
 #include <iostream>
+#include <memory>
+#include <array>
 
 namespace imgalg
-{  
+{
+  
   template<typename _T>
     class Matr
     {
     public:
       typedef _T value_type;
+      typedef value_type* pointer;
+      typedef const value_type* const_pointer;
+      typedef value_type& reference;
+      typedef const value_type& const_reference;
+      
       //ctors
-      Matr() : _row(0), _col(0), _row_step(0), _data_ptr(NULL), _row_ptrs(NULL){};
-      Matr(int row, int col);
-      Matr(const Size<int>& sz);
-      Matr(const Matr& mat);
+      Matr()
+	: _row(0), _col(0), _row_step(0),
+	_data_ptr(static_cast<value_type*>(NULL), std::default_delete<value_type[]>()),
+	_row_ptrs(static_cast<pointer*>(NULL), std::default_delete<pointer[]>()){}
+      
+      Matr(int row, int col)
+	: _row(row), _col(col), _row_step(col),
+	_data_ptr(new value_type[_row * _col], std::default_delete<value_type[]>()),
+	_row_ptrs(new pointer[_row], std::default_delete<pointer[]>()){}
+      
+      Matr(const Size<int>& sz)
+	: Matr(sz.height, sz.width){}
+	
+      Matr(const Matr& mat)
+	: _row(mat._row), _col(mat._col), _row_step(mat._row_step),
+	_data_ptr(mat._data_ptr),
+	_row_ptrs(mat._row_ptrs){ std::cout << "Copy constructor called!" << std::endl; }
+      
       //dtor
-      ~Matr();
+      ~Matr() = default;
 
       inline int row() const { return _row; }
       inline int col() const { return _col; }
@@ -29,12 +51,13 @@ namespace imgalg
       Matr operator()(const Rect<int>& roi) const;
       
       //Read only element access
-      inline const _T& at(int row, int col) const { return _row_ptrs[row][col]; }
+      inline const_reference at(int row, int col) const { return _row_ptrs.get()[row][col]; }
       //Read/write element access
-      inline _T& at(int row, int col) { return _row_ptrs[row][col]; }
-      
-      inline const _T* ptr(int row) const { return _row_ptrs[row]; }
-      inline _T* ptr(int row) { return _row_ptrs[row]; }
+      inline reference at(int row, int col) { return _row_ptrs.get()[row][col]; }
+
+
+      //No need to return const, since this function returns pointer value, not reference
+      inline pointer ptr(int row) const { return _row_ptrs.get()[row]; }
       
       friend std::ostream& operator<<(std::ostream& os, const Matr& mat)
       {
@@ -43,75 +66,36 @@ namespace imgalg
 	for(r_idx = 0; r_idx < mat._row; ++r_idx)
 	  {
 	    for(c_idx = 0; c_idx < mat._col; ++c_idx)
-	      os << mat._row_ptrs[r_idx][c_idx] << ", ";
+	      os << mat._row_ptrs.get()[r_idx][c_idx] << ", ";
 	    os << "\n";
 	  }
 	os << "]";
       }
       
-      void copyTo(Matr& mat) const;
-      
+      //void copyTo(Matr& mat) const;      
       
     private:
-      void _allocate_all(int row, int col);
-      void _deallocate_all();
-      
       int _row;      //Total rows and columns of this matrix
       int _col;
 
       int _row_step;
       
-      _T* _data_ptr; //Pointer to data, NULL means this Matr is not the one that allocates memory in the first place
-      _T** _row_ptrs; //Pointer to each row
+      std::shared_ptr<value_type> _data_ptr; //Pointer to data
+      std::shared_ptr<pointer> _row_ptrs; //Pointer to each row
     };
-
-  template<typename _T>
-    Matr<_T>::Matr(int row, int col) : _row(row), _col(col), _row_step(col)
-    {
-      _allocate_all(row, col);	
-    }
-
-  template<typename _T>
-    Matr<_T>::Matr(const Size<int>& sz)
-    {
-      _allocate_all(sz.height, sz.width);
-    }
-  
-  template<typename _T>
-    Matr<_T>::Matr(const Matr& mat)
-    {
-      _data_ptr = NULL;
-      _row_ptrs = new _T*[mat._row];
-      std::copy(mat._row_ptrs, mat._row_ptrs + mat._row, _row_ptrs);
-      
-      _row = mat._row;
-      _col = mat._col;
-      _row_step = mat._row_step;
-    }
-
-  template<typename _T>
-    Matr<_T>::~Matr()
-    {
-      _deallocate_all();
-    }
 
   template<typename _T>
     Matr<_T>& Matr<_T>::operator=(const Matr<_T>& mat)
     {
-      delete[] _data_ptr;
-      _data_ptr = NULL;
-
-      if(_row < mat._row)
-	{
-	  delete[] _row_ptrs;
-	  _row_ptrs = new _T*[mat._row];
-	}	
-      std::copy(mat._row_ptrs, mat._row_ptrs + mat._row, _row_ptrs);
+      std::cout << "Operator= called!" <<std::endl;
 
       _row = mat._row;
       _col = mat._col;
       _row_step = mat._row_step;
 
+      _data_ptr = mat._data_ptr;
+      _row_ptrs = mat._row_ptrs;
+      
       return *this;
     }
   
@@ -119,18 +103,21 @@ namespace imgalg
     Matr<_T> Matr<_T>::operator()(const Rect<int>& roi) const
     {      
       Matr<_T> mat;
+
       mat._row = roi.height;
       mat._col = roi.width;
       mat._row_step = _row_step;
 
-      mat._row_ptrs = new _T*[roi.height];
+      mat._data_ptr = _data_ptr;
+      pointer* temp_ptrs = new pointer[roi.height];
       for(int r_idx = 0; r_idx < roi.height; ++r_idx)
-	mat._row_ptrs[r_idx] = _row_ptrs[r_idx + roi.y] + roi.x;
-
+	temp_ptrs[r_idx] = _row_ptrs.get()[r_idx + roi.y] + roi.x;
+      mat._row_ptrs.reset(temp_ptrs, std::default_delete<pointer[]>());
+      
       return mat;
     }
   
-  template<typename _T>
+  /*template<typename _T>
     void Matr<_T>::copyTo(Matr<_T>& dst) const
     {
       //mat is a fully allocated matrix, and happens to have the same size as *this
@@ -156,37 +143,7 @@ namespace imgalg
 	}while(++r_idx < _row);
             
       return;
-    }
-
-  template<typename _T>
-    void Matr<_T>::_deallocate_all()
-    {
-      _row = 0;
-      _col = 0;
-      _row_step = 0;
-      
-      delete[] _row_ptrs;
-      _row_ptrs = NULL;
-      delete[] _data_ptr;
-      _data_ptr = NULL;
-    }
-
-  template<typename _T>
-    void Matr<_T>::_allocate_all(int row, int col)
-    {
-      _data_ptr = new _T[row * col];
-      _row_ptrs = new _T*[row];
-
-      int r_idx;
-      _T* ptr = NULL;
-      for(r_idx = 0, ptr = _data_ptr; r_idx < row; ++r_idx, ptr += col)
-	_row_ptrs[r_idx] = ptr;
-
-      _row = row;
-      _col = col;
-      _row_step = col;
-
-    }
+      }*/
 }
 
 #endif
