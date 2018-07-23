@@ -12,9 +12,9 @@ int main(int argc, char** argv)
       m1.at(row, col) = row * col;
   
   Matr<float> m2;
-  m2 = m1(Rect<int>(1, 1, 3, 4));
+  m2 = m1(Rect<int>(0, 0, 3, 4));
   Matr<float> m3(m2.size());
-  //m2.copyTo(m3);  
+  m2.copyTo(m3);  
 
   cout << "rows:" << endl;
   cout << m1.ptr(1) << "\n"
@@ -22,7 +22,7 @@ int main(int argc, char** argv)
        << m3.ptr(1) << endl;
 
   m2.at(0, 0) = -100;
-
+  m2.ptr(0)[1] = -90;
   
   cout << m1 << endl;
   cout << m2 << endl;

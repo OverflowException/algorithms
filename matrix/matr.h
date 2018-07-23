@@ -26,10 +26,7 @@ namespace imgalg
 	_data_ptr(static_cast<value_type*>(NULL), std::default_delete<value_type[]>()),
 	_row_ptrs(static_cast<pointer*>(NULL), std::default_delete<pointer[]>()){}
       
-      Matr(int row, int col)
-	: _row(row), _col(col), _row_step(col),
-	_data_ptr(new value_type[_row * _col], std::default_delete<value_type[]>()),
-	_row_ptrs(new pointer[_row], std::default_delete<pointer[]>()){}
+      Matr(int row, int col);
       
       Matr(const Size<int>& sz)
 	: Matr(sz.height, sz.width){}
@@ -72,7 +69,7 @@ namespace imgalg
 	os << "]";
       }
       
-      //void copyTo(Matr& mat) const;      
+      void copyTo(Matr& mat) const;      
       
     private:
       int _row;      //Total rows and columns of this matrix
@@ -84,6 +81,20 @@ namespace imgalg
       std::shared_ptr<pointer> _row_ptrs; //Pointer to each row
     };
 
+  template<typename _T>
+    Matr<_T>::Matr(int row, int col)
+    : _row(row), _col(col), _row_step(col),
+    _data_ptr(new value_type[_row * _col], std::default_delete<value_type[]>())
+    {
+      pointer* temp_ptrs = new pointer[row];
+      int r_idx = 0;
+      pointer ptr = _data_ptr.get();
+      for(; r_idx < row; ++r_idx, ptr += col)
+	temp_ptrs[r_idx] = ptr;
+
+      _row_ptrs.reset(temp_ptrs, std::default_delete<pointer[]>());
+    }
+  
   template<typename _T>
     Matr<_T>& Matr<_T>::operator=(const Matr<_T>& mat)
     {
@@ -117,33 +128,43 @@ namespace imgalg
       return mat;
     }
   
-  /*template<typename _T>
+  template<typename _T>
     void Matr<_T>::copyTo(Matr<_T>& dst) const
     {
-      //mat is a fully allocated matrix, and happens to have the same size as *this
-      if(dst._row == _row && dst._col == _col && dst._data_ptr != NULL);
-      else
-	{
-	  dst._deallocate_all();
-	  dst._allocate_all(_row, _col);
-	}
+      pointer src_row_ptr = _row_ptrs.get()[0];
+      pointer dst_row_ptr = NULL;
+      
+      //dst and src matrices' _data_ptr's object are not the same size
+      //dst matrix's _data_ptr's object is shared
+      //assign new object to dst matrix's _data_ptr
+      if(dst._row * dst._col != _row * _col || dst._data_ptr.use_count() > 1)
+	dst._data_ptr.reset(new value_type[_row * _col], std::default_delete<value_type[]>());      
+      dst_row_ptr = dst._data_ptr.get();
+      
+      //dst and src matrices' _row_ptrs' object are not the same size
+      //dst matrix's _row_ptrs' object is shared
+      //assign new object to dst matrix's _row_ptrs
+      if(dst._row != _row || dst._row_ptrs.use_count() > 1)
+	dst._row_ptrs.reset(new pointer[_row], std::default_delete<pointer[]>());
       
       int r_idx = 0;
-      _T* src_row_ptr = _row_ptrs[0];
-      _T* dst_row_ptr = dst._data_ptr;
       do
 	{
 	  //Copy _data_ptr
 	  std::copy(src_row_ptr, src_row_ptr + _col, dst_row_ptr);
 	  //Assign dst._row_ptrs
-	  dst._row_ptrs[r_idx] = dst_row_ptr;
+	  dst._row_ptrs.get()[r_idx] = dst_row_ptr;
 	  
 	  src_row_ptr += _row_step;
-	  dst_row_ptr += dst._row_step;
+	  dst_row_ptr += _col;
 	}while(++r_idx < _row);
-            
+
+      dst._row = _row;
+      dst._col = _col;
+      dst._row_step = dst._col;
+      
       return;
-      }*/
+    }
 }
 
 #endif
