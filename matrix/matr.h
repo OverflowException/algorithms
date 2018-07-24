@@ -23,8 +23,8 @@ namespace imgalg
       //ctors
       Matr()
 	: _row(0), _col(0), _row_step(0),
-	_data_ptr(static_cast<value_type*>(NULL), std::default_delete<value_type[]>()),
-	_row_ptrs(static_cast<pointer*>(NULL), std::default_delete<pointer[]>()){}
+	_data_ptr(static_cast<value_type*>(NULL)),
+	_row_ptrs(static_cast<pointer*>(NULL)){}
       
       Matr(int row, int col);
       
@@ -59,11 +59,13 @@ namespace imgalg
       friend std::ostream& operator<<(std::ostream& os, const Matr& mat)
       {
 	int r_idx, c_idx;
+	pointer row_ptr;
 	os << "[\n";
 	for(r_idx = 0; r_idx < mat._row; ++r_idx)
 	  {
+	    row_ptr = mat._row_ptrs.get()[r_idx];
 	    for(c_idx = 0; c_idx < mat._col; ++c_idx)
-	      os << mat._row_ptrs.get()[r_idx][c_idx] << ", ";
+	      os << row_ptr[c_idx] << ", ";
 	    os << "\n";
 	  }
 	os << "]";
@@ -138,14 +140,22 @@ namespace imgalg
       //dst matrix's _data_ptr's object is shared
       //assign new object to dst matrix's _data_ptr
       if(dst._row * dst._col != _row * _col || dst._data_ptr.use_count() > 1)
-	dst._data_ptr.reset(new value_type[_row * _col], std::default_delete<value_type[]>());      
+	{
+	  std::cout << "_data_ptr reassigned! "
+		    << dst._row << "x" << dst._col << " -> " << _row << "x" << _col
+		    << std::endl;
+	  dst._data_ptr.reset(new value_type[_row * _col], std::default_delete<value_type[]>());
+	}
       dst_row_ptr = dst._data_ptr.get();
       
       //dst and src matrices' _row_ptrs' object are not the same size
       //dst matrix's _row_ptrs' object is shared
       //assign new object to dst matrix's _row_ptrs
       if(dst._row != _row || dst._row_ptrs.use_count() > 1)
-	dst._row_ptrs.reset(new pointer[_row], std::default_delete<pointer[]>());
+	{
+	  std::cout << "_row_ptrs reassigned! " << dst._row << " -> " << _row << std::endl;
+	  dst._row_ptrs.reset(new pointer[_row], std::default_delete<pointer[]>());
+	}
       
       int r_idx = 0;
       do
