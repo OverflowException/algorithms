@@ -1,4 +1,4 @@
-#include "binary_tree.cpp"
+#include "binary_tree.h"
 
 int main(int argc, char** argv)
 {
